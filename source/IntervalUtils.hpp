@@ -6,11 +6,12 @@
 
 namespace App {
 /**
- * @brief 
- * 
- * @param classes 
- * @return true 
- * @return false 
+ * @brief Tenta fazer o particionamento de um conjunto de monitorias para um conjunto de salas de aula.
+ *
+ * @param mons As turmas a serem particionadas.
+ * @param classrooms Referência para um array com o mesmo tamanho em elementos que mons. Para
+ * cada enésima turma em mons, o enésimo membro disto terá o número da sala de aula necessária
+ * para a aula.
  */
-bool tryPartitionClasses(std::span<const Class> classes, uint32_t*, uint32_t);
-}
+void tryPartitionClasses(std::span<const Monitoring> mons, uint32_t& classrooms);
+}  // namespace App
