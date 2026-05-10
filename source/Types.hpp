@@ -1,0 +1,40 @@
+#pragma once
+
+#include <chrono>
+#include <cinttypes>
+#include <optional>
+#include <string>
+
+namespace App {
+struct Subject {
+    std::string id;
+    std::u8string name;
+};
+
+enum DayOfTheWeekFlag {
+    Sunday = 0x1,
+    Monday = 0x2,
+    Tuesday = 0x4,
+    Wednesday = 0x8,
+    Thursday = 0x10,
+    Friday = 0x20
+};
+
+typedef uint8_t DayOfTheWeekFlagSet;
+
+constexpr DayOfTheWeekFlagSet getFromStdChronoWeekday(std::chrono::weekday wd) {
+    return (DayOfTheWeekFlag)(1 << wd.c_encoding());
+}
+
+struct Class {
+    struct Times {
+        std::chrono::minutes start;
+        std::chrono::minutes finish;
+    };
+
+    Subject subject;
+    std::u8string teacher;
+    // Indexed from Sunday to Saturday. If optional is null, then class doesn't happen on this day
+    std::array<std::optional<Times>, 7> dailyTimes;
+};
+}  // namespace App
