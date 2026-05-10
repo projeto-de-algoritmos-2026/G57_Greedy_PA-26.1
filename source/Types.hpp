@@ -26,6 +26,20 @@ constexpr DayOfTheWeekFlagSet getFromStdChronoWeekday(std::chrono::weekday wd) {
     return (DayOfTheWeekFlag)(1 << wd.c_encoding());
 }
 
+struct Class {
+    struct Times {
+        std::chrono::minutes start;
+        std::chrono::minutes finish;
+    };
+
+    Subject subject;
+    std::u8string teacher;
+    // Indexado de Domingo a Sábado.
+    // Se um opcional for nulo, então não tem a aula da turma nesse dia
+    std::array<std::optional<Times>, 7> dailyTimes;
+    std::u8string classroom;
+};
+
 // Monitoria
 struct Monitoring {
     struct Times {
