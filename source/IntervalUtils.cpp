@@ -11,7 +11,7 @@
 namespace App {
 
 // ---------------------------------------------------------------------------
-// tryPartitionMonitorings — Interval Partitioning (João Felipe)
+// tryPartitionMonitorings — Interval Partitioning
 // ---------------------------------------------------------------------------
 bool tryPartitionMonitorings(std::span<const Monitoring> mons,
                              std::span<const std::u8string> pClassroomsByPriority,
