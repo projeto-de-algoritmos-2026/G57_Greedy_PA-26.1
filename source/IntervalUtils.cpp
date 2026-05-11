@@ -8,16 +8,17 @@
 #include <vector>
 
 namespace App {
-bool tryPartitionClasses(std::span<const Monitoring> mons,
-                         std::span<const std::u8string> pClassroomsByPriority,
-                         std::u8string_view* pAssignedClassrooms, std::span<const Class> classes) {
+bool tryPartitionMonitorings(std::span<const Monitoring> mons,
+                             std::span<const std::u8string> pClassroomsByPriority,
+                             std::u8string_view* pAssignedClassrooms,
+                             std::span<const Class> classes) {
     // A implementação no geral é baseada no "interval partitioning" modificado para, entre outros
-    // aspectos, trabalhar com seções de tempo linearizadas
+    // aspectos, trabalhar com seções de tempo linearizadas e dois tipos distintos de intervalo
 
     constexpr std::chrono::minutes dayLimit{24 * 60};
 
     // Validação de pAssignedClassrooms
-    if (pAssignedClassrooms == nullptr) {
+    if (!pAssignedClassrooms) {
         throw std::invalid_argument("pAssignedClassrooms não pode ser nulo");
     }
 
