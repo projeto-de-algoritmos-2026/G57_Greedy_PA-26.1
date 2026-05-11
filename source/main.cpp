@@ -466,15 +466,15 @@ int main() {
                   << "╠════════════════════════════════════════╣\n"
                   << "║  Dados                                 ║\n"
                   << "║  [1] Gerenciar salas (" << g_Salas.size() << ")";
-        for (int i = (int)std::to_string(g_Salas.size()).size(); i < 18; ++i)
+        for (int i = (int)std::to_string(g_Salas.size()).size(); i < 16; ++i)
             std::cout << ' ';
         std::cout << "║\n"
                   << "║  [2] Gerenciar turmas (" << g_Turmas.size() << ")";
-        for (int i = (int)std::to_string(g_Turmas.size()).size(); i < 17; ++i)
+        for (int i = (int)std::to_string(g_Turmas.size()).size(); i < 15; ++i)
             std::cout << ' ';
         std::cout << "║\n"
                   << "║  [3] Gerenciar monitorias (" << g_Monitorias.size() << ")";
-        for (int i = (int)std::to_string(g_Monitorias.size()).size(); i < 13; ++i)
+        for (int i = (int)std::to_string(g_Monitorias.size()).size(); i < 11; ++i)
             std::cout << ' ';
         std::cout << "║\n"
                   << "╠════════════════════════════════════════╣\n"

@@ -1,7 +1,6 @@
 #include "IntervalUtils.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <queue>
 #include <stdexcept>
