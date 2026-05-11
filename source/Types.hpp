@@ -26,6 +26,7 @@ constexpr DayOfTheWeekFlagSet getFromStdChronoWeekday(std::chrono::weekday wd) {
     return (DayOfTheWeekFlag)(1 << wd.c_encoding());
 }
 
+// Turma
 struct Class {
     struct Times {
         std::chrono::minutes start;

@@ -17,9 +17,10 @@ namespace App {
  * para a aula.
  * @return true se conseguiu particionar todas as monitorias.
  * @throws std::invalid_argument se classrooms for nulo
- * @throws std::invalid_argument se houver uma monitoria ou turma com horários inválidos (valor maior ou igual a 24 horas)
+ * @throws std::invalid_argument se houver uma monitoria ou turma com horários inválidos (valor
+ * maior ou igual a 24 horas)
  */
 bool tryPartitionClasses(std::span<const Monitoring> mons,
-                         std::span<std::u8string> pClassroomsByPriority,
+                         std::span<const std::u8string> pClassroomsByPriority,
                          std::u8string_view* pAssignedClassrooms, std::span<const Class> classes);
 }  // namespace App
