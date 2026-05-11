@@ -17,7 +17,8 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
                              std::span<const std::u8string> pClassroomsByPriority,
                              std::u8string_view* pAssignedClassrooms,
                              std::span<const Class> classes) {
-    constexpr std::chrono::minutes dayLimit{24 * 60};
+        // A implementação no geral é baseada no "interval partitioning" modificado para, entre outros
+    // aspectos, trabalhar com seções de tempo linearizadas e dois tipos distintos de intervalo
     if (!pAssignedClassrooms)
         throw std::invalid_argument("pAssignedClassrooms não pode ser nulo");
 
@@ -26,10 +27,6 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
         constexpr std::chrono::minutes lim{24 * 60};
         if (start >= lim || finish >= lim || start >= finish)
             throw std::invalid_argument("horário inválido");
-    };
-    static const auto overlaps = [](std::chrono::minutes aStart, std::chrono::minutes aFinish,
-                                    std::chrono::minutes bStart, std::chrono::minutes bFinish) {
-        return aStart < bFinish && bStart < aFinish;
     };
 
     for (const Monitoring& mon : mons) validateTimes(mon.times.start, mon.times.finish);
@@ -41,15 +38,21 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
     std::vector<MonWithIndex> orderedMons;
     orderedMons.reserve(mons.size());
 
+    // Tabela de hash
     std::unordered_map<std::u8string_view, size_t> roomIndexByName;
     roomIndexByName.reserve(pClassroomsByPriority.size());
     for (size_t i = 0; i < pClassroomsByPriority.size(); ++i)
         roomIndexByName.emplace(pClassroomsByPriority[i], i);
 
+    // Intervalo de tempo (início, fim). Usando std::pair por simplicidade
     using Interval = std::pair<std::chrono::minutes, std::chrono::minutes>;
+
+    // Para cada dia da semana (0-6) e cada sala, armazena os intervalos de aula já existentes.
+    // Usado para evitar sobreposição de monitorias com aulas já agendadas
     std::array<std::vector<std::vector<Interval>>, 7> classIntervalsByDay;
-    for (unsigned day = 0; day < 7; ++day)
+    for (unsigned day = 0; day < classIntervalsByDay.size(); ++day) {
         classIntervalsByDay[day].resize(pClassroomsByPriority.size());
+    }
 
     for (size_t i = 0; i < mons.size(); ++i) {
         if (!mons[i].wd.ok()) throw std::invalid_argument("dia da semana inválido");
@@ -57,12 +60,27 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
     }
 
     for (const Class& klass : classes) {
+        /*
+        if (klass.classroom.empty()) {
+            continue;
+        }
+         */
+
         const auto roomIt = roomIndexByName.find(klass.classroom);
-        if (roomIt == roomIndexByName.end()) continue;
+        if (roomIt == roomIndexByName.end()) {
+            // Essa turma não tem aula na sala klass.classroom
+            continue;
+        }
+
         for (unsigned day = 0; day < klass.dailyTimes.size(); ++day) {
             const auto& times = klass.dailyTimes[day];
-            if (!times.has_value()) continue;
-            classIntervalsByDay[day][roomIt->second].emplace_back(times->start, times->finish);
+            if (!times.has_value()) {
+                // Não tem aula nesse dia, podemos pular
+                continue;
+            }
+
+            classIntervalsByDay[day][roomIt->second].emplace_back(
+                Interval{times->start, times->finish});
         }
     }
 
@@ -70,6 +88,7 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
         for (auto& ri : classIntervalsByDay[day])
             std::sort(ri.begin(), ri.end());
 
+    // Ordena monitorias por dia da semana, início e término
     std::sort(orderedMons.begin(), orderedMons.end(),
               [](const MonWithIndex& a, const MonWithIndex& b) {
                   if (a.mon->wd.c_encoding() != b.mon->wd.c_encoding())
@@ -79,57 +98,92 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
                   return a.mon->times.finish < b.mon->times.finish;
               });
 
-    struct ActiveRoom { std::chrono::minutes finish; size_t roomIndex; };
-    static const auto activeCmp = [](const ActiveRoom& a, const ActiveRoom& b) {
-        if (a.finish != b.finish) return a.finish > b.finish;
+    struct RoomRelease {
+        std::chrono::minutes freeAt;
+        size_t roomIndex;
+    };
+
+    static const auto releaseCmp = [](const RoomRelease& a, const RoomRelease& b) {
+        if (a.freeAt != b.freeAt) return a.freeAt > b.freeAt;
         return a.roomIndex > b.roomIndex;
     };
 
-    std::priority_queue<ActiveRoom, std::vector<ActiveRoom>, decltype(activeCmp)> activeRooms(activeCmp);
+    // Salas ainda bloqueadas por aulas ou monitorias já atribuídas
+    std::priority_queue<RoomRelease, std::vector<RoomRelease>, decltype(releaseCmp)> blockedRooms(
+        releaseCmp);
+    // Salas disponíveis, sempre priorizando o menor índice primeiro
     std::priority_queue<size_t, std::vector<size_t>, std::greater<>> freeRooms;
 
-    const auto resetDayState = [&]() {
-        while (!activeRooms.empty()) activeRooms.pop();
+    // Reinicia o estado de salas para um novo dia: limpa salas em uso e marca todas como livres
+    static const auto resetDayState = [&]() {
+        while (!blockedRooms.empty()) blockedRooms.pop();
         while (!freeRooms.empty()) freeRooms.pop();
         for (size_t i = 0; i < pClassroomsByPriority.size(); ++i) freeRooms.emplace(i);
     };
 
+    static const auto releasesRoomAt = [](const std::chrono::minutes currentTime,
+                                   const std::chrono::minutes candidateFreeAt) {
+        return candidateFreeAt <= currentTime;
+    };
+
     std::chrono::weekday currentDay{};
     bool hasCurrentDay = false;
+    std::vector<std::chrono::minutes> roomFreeAt(pClassroomsByPriority.size(), std::chrono::minutes{0});
+    std::vector<size_t> nextClassIndex(pClassroomsByPriority.size(), 0);
 
+    // Laço pelas monitorias ordenadas
     for (const MonWithIndex& mi : orderedMons) {
         auto* mon = mi.mon;
         if (!hasCurrentDay || mon->wd != currentDay) {
             currentDay = mon->wd; hasCurrentDay = true; resetDayState();
+            std::fill(roomFreeAt.begin(), roomFreeAt.end(), std::chrono::minutes{0});
+            std::fill(nextClassIndex.begin(), nextClassIndex.end(), 0);
         }
-        while (!activeRooms.empty() && activeRooms.top().finish <= mon->times.start) {
-            freeRooms.emplace(activeRooms.top().roomIndex); activeRooms.pop();
+
+        while (!blockedRooms.empty() && releasesRoomAt(mon->times.start, blockedRooms.top().freeAt)) {
+            const RoomRelease release = blockedRooms.top();
+            blockedRooms.pop();
+            if (roomFreeAt[release.roomIndex] == release.freeAt) {
+                freeRooms.emplace(release.roomIndex);
+            }
         }
-        if (freeRooms.empty()) return false;
 
         size_t selectedRoomIndex = pClassroomsByPriority.size();
-        std::vector<size_t> skippedRooms;
-
+        bool assigned = false;
         while (!freeRooms.empty()) {
             const size_t candidateRoomIndex = freeRooms.top();
             freeRooms.pop();
-            bool blockedByClass = false;
-            const auto& blocked = classIntervalsByDay[mi.mon->wd.c_encoding()][candidateRoomIndex];
-            for (const auto& interval : blocked) {
-                if (interval.first >= mon->times.finish) break;
-                if (overlaps(mon->times.start, mon->times.finish, interval.first, interval.second)) {
-                    blockedByClass = true; break;
-                }
+
+            if (roomFreeAt[candidateRoomIndex] > mon->times.start) {
+                continue;
             }
-            if (!blockedByClass) { selectedRoomIndex = candidateRoomIndex; break; }
-            skippedRooms.emplace_back(candidateRoomIndex);
+
+            const auto& blocked = classIntervalsByDay[mi.mon->wd.c_encoding()][candidateRoomIndex];
+            size_t& classIndex = nextClassIndex[candidateRoomIndex];
+            while (classIndex < blocked.size() && blocked[classIndex].second <= mon->times.start) {
+                ++classIndex;
+            }
+
+            if (classIndex < blocked.size() && blocked[classIndex].first < mon->times.finish) {
+                roomFreeAt[candidateRoomIndex] = blocked[classIndex].second;
+                blockedRooms.push(RoomRelease{roomFreeAt[candidateRoomIndex], candidateRoomIndex});
+                continue;
+            }
+
+            selectedRoomIndex = candidateRoomIndex;
+            assigned = true;
+            break;
         }
-        for (size_t sr : skippedRooms) freeRooms.emplace(sr);
-        if (selectedRoomIndex == pClassroomsByPriority.size()) return false;
+
+        if (!assigned) return false;
 
         pAssignedClassrooms[mi.index] = pClassroomsByPriority[selectedRoomIndex];
-        activeRooms.emplace(ActiveRoom{mon->times.finish, selectedRoomIndex});
+        roomFreeAt[selectedRoomIndex] = mon->times.finish;
+        blockedRooms.push(RoomRelease{roomFreeAt[selectedRoomIndex], selectedRoomIndex});
     }
+    // Fim do laço pelas monitorias ordenadas
+
+    // Retornar que conseguimos agendar todas as monitorias
     return true;
 }
 
@@ -138,8 +192,6 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
 // ---------------------------------------------------------------------------
 std::vector<const Monitoring*> tryScheduleMonitorings(std::span<const Monitoring> mons,
                                                       std::span<const Class> classes) {
-    constexpr std::chrono::minutes dayLimit{24 * 60};
-
     static const auto validateTimes = [](std::chrono::minutes start,
                                          std::chrono::minutes finish) {
         constexpr std::chrono::minutes lim{24 * 60};
