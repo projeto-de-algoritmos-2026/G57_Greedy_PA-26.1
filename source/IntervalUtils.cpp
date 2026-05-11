@@ -17,24 +17,29 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
                              std::span<const std::u8string> pClassroomsByPriority,
                              std::u8string_view* pAssignedClassrooms,
                              std::span<const Class> classes) {
-        // A implementação no geral é baseada no "interval partitioning" modificado para, entre outros
+    // A implementação no geral é baseada no "interval partitioning" modificado para, entre outros
     // aspectos, trabalhar com seções de tempo linearizadas e dois tipos distintos de intervalo
+
     if (!pAssignedClassrooms)
         throw std::invalid_argument("pAssignedClassrooms não pode ser nulo");
 
-    static const auto validateTimes = [](std::chrono::minutes start,
-                                         std::chrono::minutes finish) {
+    static const auto validateTimes = [](std::chrono::minutes start, std::chrono::minutes finish) {
         constexpr std::chrono::minutes lim{24 * 60};
         if (start >= lim || finish >= lim || start >= finish)
             throw std::invalid_argument("horário inválido");
     };
 
-    for (const Monitoring& mon : mons) validateTimes(mon.times.start, mon.times.finish);
+    for (const Monitoring& mon : mons)
+        validateTimes(mon.times.start, mon.times.finish);
     for (const Class& klass : classes)
         for (const auto& times : klass.dailyTimes)
-            if (times.has_value()) validateTimes(times->start, times->finish);
+            if (times.has_value())
+                validateTimes(times->start, times->finish);
 
-    struct MonWithIndex { size_t index; const Monitoring* mon; };
+    struct MonWithIndex {
+        size_t index;
+        const Monitoring* mon;
+    };
     std::vector<MonWithIndex> orderedMons;
     orderedMons.reserve(mons.size());
 
@@ -55,7 +60,8 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
     }
 
     for (size_t i = 0; i < mons.size(); ++i) {
-        if (!mons[i].wd.ok()) throw std::invalid_argument("dia da semana inválido");
+        if (!mons[i].wd.ok())
+            throw std::invalid_argument("dia da semana inválido");
         orderedMons.emplace_back(MonWithIndex{i, &mons[i]});
     }
 
@@ -104,7 +110,8 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
     };
 
     static const auto releaseCmp = [](const RoomRelease& a, const RoomRelease& b) {
-        if (a.freeAt != b.freeAt) return a.freeAt > b.freeAt;
+        if (a.freeAt != b.freeAt)
+            return a.freeAt > b.freeAt;
         return a.roomIndex > b.roomIndex;
     };
 
@@ -116,31 +123,38 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
 
     // Reinicia o estado de salas para um novo dia: limpa salas em uso e marca todas como livres
     static const auto resetDayState = [&]() {
-        while (!blockedRooms.empty()) blockedRooms.pop();
-        while (!freeRooms.empty()) freeRooms.pop();
-        for (size_t i = 0; i < pClassroomsByPriority.size(); ++i) freeRooms.emplace(i);
+        while (!blockedRooms.empty())
+            blockedRooms.pop();
+        while (!freeRooms.empty())
+            freeRooms.pop();
+        for (size_t i = 0; i < pClassroomsByPriority.size(); ++i)
+            freeRooms.emplace(i);
     };
 
     static const auto releasesRoomAt = [](const std::chrono::minutes currentTime,
-                                   const std::chrono::minutes candidateFreeAt) {
+                                          const std::chrono::minutes candidateFreeAt) {
         return candidateFreeAt <= currentTime;
     };
 
     std::chrono::weekday currentDay{};
     bool hasCurrentDay = false;
-    std::vector<std::chrono::minutes> roomFreeAt(pClassroomsByPriority.size(), std::chrono::minutes{0});
+    std::vector<std::chrono::minutes> roomFreeAt(pClassroomsByPriority.size(),
+                                                 std::chrono::minutes{0});
     std::vector<size_t> nextClassIndex(pClassroomsByPriority.size(), 0);
 
     // Laço pelas monitorias ordenadas
     for (const MonWithIndex& mi : orderedMons) {
         auto* mon = mi.mon;
         if (!hasCurrentDay || mon->wd != currentDay) {
-            currentDay = mon->wd; hasCurrentDay = true; resetDayState();
+            currentDay = mon->wd;
+            hasCurrentDay = true;
+            resetDayState();
             std::fill(roomFreeAt.begin(), roomFreeAt.end(), std::chrono::minutes{0});
             std::fill(nextClassIndex.begin(), nextClassIndex.end(), 0);
         }
 
-        while (!blockedRooms.empty() && releasesRoomAt(mon->times.start, blockedRooms.top().freeAt)) {
+        while (!blockedRooms.empty() &&
+               releasesRoomAt(mon->times.start, blockedRooms.top().freeAt)) {
             const RoomRelease release = blockedRooms.top();
             blockedRooms.pop();
             if (roomFreeAt[release.roomIndex] == release.freeAt) {
@@ -175,7 +189,8 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
             break;
         }
 
-        if (!assigned) return false;
+        if (!assigned)
+            return false;
 
         pAssignedClassrooms[mi.index] = pClassroomsByPriority[selectedRoomIndex];
         roomFreeAt[selectedRoomIndex] = mon->times.finish;
@@ -192,17 +207,18 @@ bool tryPartitionMonitorings(std::span<const Monitoring> mons,
 // ---------------------------------------------------------------------------
 std::vector<const Monitoring*> tryScheduleMonitorings(std::span<const Monitoring> mons,
                                                       std::span<const Class> classes) {
-    static const auto validateTimes = [](std::chrono::minutes start,
-                                         std::chrono::minutes finish) {
+    static const auto validateTimes = [](std::chrono::minutes start, std::chrono::minutes finish) {
         constexpr std::chrono::minutes lim{24 * 60};
         if (start >= lim || finish >= lim || start >= finish)
             throw std::invalid_argument("horário inválido");
     };
 
-    for (const Monitoring& mon : mons) validateTimes(mon.times.start, mon.times.finish);
+    for (const Monitoring& mon : mons)
+        validateTimes(mon.times.start, mon.times.finish);
     for (const Class& klass : classes)
         for (const auto& times : klass.dailyTimes)
-            if (times.has_value()) validateTimes(times->start, times->finish);
+            if (times.has_value())
+                validateTimes(times->start, times->finish);
 
     using Interval = std::pair<std::chrono::minutes, std::chrono::minutes>;
 
@@ -213,12 +229,15 @@ std::vector<const Monitoring*> tryScheduleMonitorings(std::span<const Monitoring
             if (klass.dailyTimes[day].has_value())
                 classBlocksByDay[day].emplace_back(klass.dailyTimes[day]->start,
                                                    klass.dailyTimes[day]->finish);
-    for (auto& db : classBlocksByDay) std::sort(db.begin(), db.end());
+    for (auto& db : classBlocksByDay)
+        std::sort(db.begin(), db.end());
 
     const auto conflictsWithClass = [&](const Monitoring& mon) -> bool {
         for (const auto& block : classBlocksByDay[mon.wd.c_encoding()]) {
-            if (block.first >= mon.times.finish) break;
-            if (mon.times.start < block.second && block.first < mon.times.finish) return true;
+            if (block.first >= mon.times.finish)
+                break;
+            if (mon.times.start < block.second && block.first < mon.times.finish)
+                return true;
         }
         return false;
     };
@@ -234,7 +253,8 @@ std::vector<const Monitoring*> tryScheduleMonitorings(std::span<const Monitoring
     // Greedy: earliest finish time por dia
     for (auto& dayMons : monsByDay) {
         std::sort(dayMons.begin(), dayMons.end(), [](const Monitoring* a, const Monitoring* b) {
-            if (a->times.finish != b->times.finish) return a->times.finish < b->times.finish;
+            if (a->times.finish != b->times.finish)
+                return a->times.finish < b->times.finish;
             return a->times.start < b->times.start;
         });
         std::chrono::minutes lastFinish{0};
