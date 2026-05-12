@@ -57,5 +57,5 @@ Ao abrir o executável compilado, será exibido um menu no *console* conforme a 
 * Foram necessárias umas certas modificações nos algoritmos básicos de *Interval Scheduling* & *Partitioning*, para lidar com particularidades do problema selecionado como **a setorização da semana em 7 dias**, que por sua vez consistem de 24 * 60 = 1.440 minutos de duração cada — exigindo a "planificação" dos 7 intervalos de tempo diários da semana em 1 só e a validação de parâmetros entrados pelo usuário — e a presença de mais de 1 tipo de intervalo temporal, **monitorias** e **turmas** — exigindo o uso de vários contêineres de dados adicionais, como *arrays* dinâmicos (*vetores*), *heaps* e um dicionário (tabela de *hash*), para lidar-se com a complexidade adicionada —. Mais detalhes podem ser vistos analisando-se o arquivo de código-fonte `source/IntervalUtils.cpp`.
 
 ## *Link*(s) do vídeo de entrega
-* _ (Parte 1/2)
-* _ (Parte 2/2)
+* _ (Parte **1**/2)
+* https://youtu.be/1G6LZLceSdU (Parte **2**/2)
