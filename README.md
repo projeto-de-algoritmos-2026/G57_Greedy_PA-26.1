@@ -1,9 +1,9 @@
 # **Agendamento de Monitorias** — G57
 
-**Disciplina:** Projeto de Algoritmos   
-**Módulo:** Algoritmos Ambiciosos/Gulosos/Gananciosos (*Greedy Algorithms*)
-**Algoritmos:** *Interval Scheduling* (Agendamento de Intervalos) & *Interval Partitioning* (Particionamento de Intervalos)
-**Tema:** Agendamento de monitorias 
+**Disciplina:** Projeto de Algoritmos<br>
+**Módulo:** Algoritmos Ambiciosos/Gulosos/Gananciosos (*Greedy Algorithms*)<br>
+**Algoritmos:** *Interval Scheduling* (Agendamento de Intervalos) & *Interval Partitioning* (Particionamento de Intervalos)<br>
+**Tema:** Agendamento de monitorias<br>
 
 ## Alunos
 
@@ -19,9 +19,10 @@
 O **problema** a se desejar cumprir são ambos os seguintes objetivos:
 * Agendar **o máximo de monitorias sem sobreposição temporal** (uma começando antes da outra terminar) para um grupo de salas de aula na UnB/FCTE, levando também em consideração as aulas das turmas que já estão agendadas para ditas salas;
 * Agendar um conjunto de monitorias exigindo-se **o mínimo possível de salas de aula distintas** na UnB/FCTE para a cobertura de monitorias sobrepostas temporalmente entre si ou com outras aulas das turmas.
+
 Para a base dessas funções, foram trabalhadas, respectivamente, as implementações *greedy* (ambiciosas/gananciosas/gulosas) dos algoritmos de ***Interval Scheduling*** e ***Interval Partitioning***.
 
-## Screenshots
+## *Screenshots*
 ### Captura de Tela 1: Menu principal
 ![Captura de Tela 1: Menu principal](<docs/assets/Captura de Tela 1.png>)
 ### Captura de Tela 2: Uso da função "Carregar exemplo"
