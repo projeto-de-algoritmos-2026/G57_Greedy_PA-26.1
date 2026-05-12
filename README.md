@@ -24,13 +24,13 @@ Para a base dessas funções, foram trabalhadas, respectivamente, as implementa�
 
 ## *Screenshots*
 ### Captura de Tela 1: Menu principal
-![Captura de Tela 1: Menu principal](<docs/assets/Captura de Tela 1.png>)
+![Captura de Tela 1: Menu principal](docs/assets/CapturaDeTela1.png)
 ### Captura de Tela 2: Uso da função "Carregar exemplo"
-![Captura de Tela 2: Uso da função "Carregar exemplo"](<docs/assets/Captura de Tela 2.png>)
+![Captura de Tela 2: Uso da função "Carregar exemplo"](<docs/assets/CapturaDeTela2.png>)
 ### Captura de Tela 3: Uso da função "*Interval Scheduling* (máximo de monitorias)"
-![Captura de Tela 3: Uso da função "Interval Scheduling (máximo de monitorias)](<docs/assets/Captura de Tela 3.png>)
+![Captura de Tela 3: Uso da função "Interval Scheduling (máximo de monitorias)](<docs/assets/CapturaDeTela3.png>)
 ### Captura de Tela 4: Uso da função "*Interval Partitioning* (distribuição de salas)"
-![Captura de Tela 4: Uso da função "Interval Partitioning (distribuição de salas)](<docs/assets/Captura de Tela 4.png>)
+![Captura de Tela 4: Uso da função "Interval Partitioning (distribuição de salas)](<docs/assets/CapturaDeTela4.png>)
 
 ## Como executar
 
