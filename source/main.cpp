@@ -46,7 +46,7 @@ static std::chrono::minutes parseTempo(const std::string& s) {
     std::istringstream ss(s);
     ss >> h >> sep >> m;
     if (ss.fail() || sep != ':' || h < 0 || h >= 24 || m < 0 || m >= 60) {
-        throw std::invalid_argument("Formato inválido. Use HH:MM (ex: 08:00)");
+        throw std::invalid_argument("Formato inválido. Use HH:MM (ex.: 08:00)");
     }
     return std::chrono::minutes{h * 60 + m};
 }
@@ -184,7 +184,7 @@ static void menuTurmas() {
             turma.teacher = lerU8("Professor: ");
             turma.classroom = lerU8("Sala: ");
 
-            std::cout << "Dias com aula (ex: 2 4 para Seg e Qua, 0=Dom..6=Sab): ";
+            std::cout << "Dias com aula (ex.: 2 4 para Terça e Quinta, 0=Dom..6=Sab): ";
             std::string linha;
             std::getline(std::cin, linha);
             std::istringstream ss(linha);
